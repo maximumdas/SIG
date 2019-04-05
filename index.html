@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SIG Tugas 1</title>
+		<link rel="stylesheet" type="text/css" href="css/leaflet.css">
+    	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+	    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+		<script type="text/javascript" src="js/leaflet.js"></script>
+		<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+	</head>
+	<body>
+		<style type="text/css">
+			html, body {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+			#nmap {
+				height: 100%;
+			}
+		</style>
+		<div id="nmap"></div>
+	</body>
+	<script type="text/javascript" src="js/bs_bidaracina.js"></script>
+	<script type="text/javascript" src="js/nashir_landmark.js"></script>
+	<script type="text/javascript" src="js/nashir_landmark_halte.js"></script>
+	<script type="text/javascript" src="js/nashir_landmark_bangunan.js"></script>
+	<script type="text/javascript" src="js/nashir_landmark_toko.js"></script>
+
+
+	<script type="text/javascript">
+		M.AutoInit();
+		var mapOpt={
+			center: [-6.23093,106.86888],
+			zoom:15,
+			zoomControl:false,
+			minZoom:8,
+			maxZoom:50
+		};
+		var mymap = L.map('nmap', mapOpt);
+		function fokusStis(){
+			mymap.panTo(new L.LatLng(-6.231545781580039,106.86671132672775));
+			M.Toast.dismissAll();
+		}
+		var elementHTML = '<span>Fokus berada di posisi saya, geser ke STIS untuk melihat BS.</span><button class="btn-flat toast-action" onclick="fokusStis()">Fokuskan ke STIS</button>';
+		M.toast({html:elementHTML, displayLength:10000});
+		
+
+		var rumah = L.icon({
+			iconUrl:'css/images/rumah.png',
+			iconSize:[30,45],
+			iconAnchor:[16, 37],
+			popupAnchor:[0,-28]
+		}),
+			bangunan = L.icon({
+			iconUrl:'css/images/bangunan.png',
+			iconSize:[30,45],
+			iconAnchor:[16, 37],
+			popupAnchor:[0,-28]
+		}),
+			halte = L.icon({
+			iconUrl:'css/images/halte.png',
+			iconSize:[30,45],
+			iconAnchor:[16, 37],
+			popupAnchor:[0,-28]
+		}),
+			toko = L.icon({
+				iconUrl:'css/images/toko.png',
+				iconSize: [30,45],
+				iconAnchor: [16, 37],
+				popupAnchor:[0,-28]
+			});
+		var googleClient = google.loader.ClientLocation,
+			myLocationMarker = L.marker(mymap.getCenter()).addTo(mymap),
+			onlocationfound = function(e){
+				myLocationMarker.bindPopup('<b>Lokasi saya sekarang.</b>');
+				myLocationMarker.setLatLng(e.latlng);
+				mymap.setView(myLocationMarker.getLatLng(), mymap.getZoom());
+				// alert('Marker Berada di Posisi Saya Sekarang');
+			};
+
+		L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+			attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+			id: 'mapbox.streets',
+			accessToken:'pk.eyJ1IjoibWF4aW11bWRhcyIsImEiOiJjanUyN3RwMngwOWtpNDRsa2wzYmU5eWplIn0.ajMI1wzQ7NxiqjfpCz5D0Q'}).addTo(mymap);
+		mymap.on('locationfound', onlocationfound);
+		if(googleClient){
+			onlocationfound({latlng:[glcl.latitude, glcl.longitude]});
+		}
+		mymap.locate();
+		mymap.on('click',function(e){
+			L.marker(e.latlng).addTo(mymap).bindPopup('('+e.latlng.lat+','+e.latlng.lng+')');
+			M.toast({html:'Berhasil menambah marker (tidak permanen).', displayLength: 2000})
+		});
+
+		L.geoJSON([map_bs_bicin, nmark_rumah],
+			{color:'blue',
+			fillColor:'cyan',
+			opacity:0.5,
+
+			onEachFeature: function(feature, layer){
+				var popupContent = "";
+				if (feature.properties && feature.properties.bsno){
+					popupContent = '<p>ID blok sensus:'+feature.properties.bsno+'</p>';
+				};
+				if(feature.properties && feature.properties.PATH){
+					// popupContent = '<p>'+feature.properties.Remarks+'</p>'+'<p>Gambar Landmark: <img src="'+feature.properties.PATH+'" height="350" width="350"><img></p>';
+					popupContent= '<p>'+feature.properties.Remarks+ "</p>" +"<p>GambarLandmark : " +"<img src='"+ window.location+ feature.properties.PATH+"' height='350' width='300'</img>" +"</p>";
+				}
+				layer.bindPopup(popupContent);
+			},
+			pointToLayer: function(feature, latlng){
+				return L.marker(latlng, {icon:rumah});
+			}}).addTo(mymap);
+
+		L.geoJSON([nmark_halte],{
+			onEachFeature: function(feature, layer){
+				var popupContent = "";
+				if (feature.properties.PATH && feature.properties.PATH){
+					popupContent = '<p>'+feature.properties.Remarks+'</p>'+'<p>Gambar Landmark: <img src="'+feature.properties.PATH+'" height="350" width="300"><img></p>';
+				}
+				layer.bindPopup(popupContent);
+			},
+			pointToLayer: function(feature, latlng){
+				return L.marker(latlng, {icon:halte});
+			}
+		}).addTo(mymap);
+
+		L.geoJSON([nmark_bangunan],{
+			onEachFeature: function(feature, layer){
+				var popupContent = "";
+				if (feature.properties.PATH && feature.properties.PATH){
+					popupContent = '<p>'+feature.properties.Remarks+'</p>'+'<p>Gambar Landmark: <img src="'+feature.properties.PATH+'" height="350" width="300"><img></p>';
+				}
+				layer.bindPopup(popupContent);
+			},
+			pointToLayer:function(feature, latlng){
+				return L.marker(latlng, {icon:bangunan});
+			}
+		}).addTo(mymap);
+
+		L.geoJSON([nmark_toko],{
+			onEachFeature: function(feature, layer){
+				var popupContent = "";
+				if (feature.properties.PATH && feature.properties.PATH){
+					popupContent = '<p>'+feature.properties.Remarks+'</p>'+'<p>Gambar Landmark: <img src="'+feature.properties.PATH+'" height="350" width="300"><img></p>';
+				}
+				layer.bindPopup(popupContent);
+			},
+			pointToLayer: function(feature, latlng){
+				return L.marker(latlng, {icon:toko});
+			}
+		}).addTo(mymap);
+	</script>
+</html>
